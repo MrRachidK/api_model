@@ -5,7 +5,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 import pandas as pd
-from config import basedir
 from src.features.functions import create_dictionaries, replace_things, calculate_stats, calculate_effectiveness
 import mysql.connector
 from credentials import sql_user, sql_password, sql_host, sql_database

@@ -1,13 +1,12 @@
 import sys
 import os
 
-from flask import jsonify, request
+from flask import request
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 from model_app import app 
 from src.results.prediction import predict_result
-import requests
 import json
 
 
