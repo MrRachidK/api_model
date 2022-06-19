@@ -17,8 +17,8 @@ def hello():
 @app.route('/get_prediction')
 def get_prediction():
     data = json.loads(request.get_json())
-    pokemon_1 = int(data['First_pokemon'])
-    pokemon_2 = int(data['Second_pokemon'])
+    pokemon_1 = int(data['first_pokemon'])
+    pokemon_2 = int(data['second_pokemon'])
     prediction = predict_result(pokemon_1, pokemon_2)
 
     return prediction
