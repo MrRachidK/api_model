@@ -3,31 +3,31 @@ import numpy as np
 
 def create_dictionaries(data):
     name_df = data.iloc[:, 0:2]
-    name_dict = name_df.set_index('Number').to_dict()['Name']
+    name_dict = name_df.set_index('number').to_dict()['name']
 
     type_df = data.iloc[:, 0:4]
-    type_df = type_df.drop('Name', axis=1)
-    type_dict = type_df.set_index('Number').T.to_dict('list')
+    type_df = type_df.drop('name', axis=1)
+    type_dict = type_df.set_index('number').T.to_dict('list')
 
-    stats_df = data.drop(['Type_1', 'Type_2', 'Name', 'Generation'], axis=1)
-    stats_dict = stats_df.set_index('Number').T.to_dict('list')
+    stats_df = data.drop(['type_1', 'type_2', 'name', 'generation'], axis=1)
+    stats_dict = stats_df.set_index('number').T.to_dict('list')
 
     return name_dict, type_dict, stats_dict
 
 def replace_things(data, stats, types):
-    # Map each battle to pokemon data
-    
-    data['First_pokemon_stats'] = data.First_pokemon.map(stats)
-    data['Second_pokemon_stats'] = data.Second_pokemon.map(stats)
 
-    data['First_pokemon'] = data.First_pokemon.map(types)
-    data['Second_pokemon'] = data.Second_pokemon.map(types)
+    # Map each battle to pokemon data
+    data['First_pokemon_stats'] = data.first_pokemon.map(stats)
+    data['Second_pokemon_stats'] = data.second_pokemon.map(stats)
+
+    data['first_pokemon'] = data.first_pokemon.map(types)
+    data['second_pokemon'] = data.second_pokemon.map(types)
 
     return data
 
 def calculate_stats(data):
     # Calculate stats difference
-    
+    print(data)
     stats_col = ['HP_diff', 'Attack_diff', 'Defense_diff', 'Sp.Atk_diff', 'Sp.Def_diff', 'Speed_diff', 'Legendary_diff']
     diff_list = []
 
@@ -125,18 +125,18 @@ def calculate_effectiveness(data):
         # Manipulating values if found on dictionary
         for i in range(0,2):
             for j in range(0,2):
-                if row.Second_pokemon[j] in very_effective_dict.get(row.First_pokemon[i]):
+                if row.second_pokemon[j] in very_effective_dict.get(row.first_pokemon[i]):
                     nested_type[0][i] *= 2
-                if row.Second_pokemon[j] in not_very_effective_dict.get(row.First_pokemon[i]):
+                if row.second_pokemon[j] in not_very_effective_dict.get(row.first_pokemon[i]):
                     nested_type[0][i] /= 2
-                if row.Second_pokemon[j] in not_effective_dict.get(row.First_pokemon[i]):
+                if row.second_pokemon[j] in not_effective_dict.get(row.first_pokemon[i]):
                     nested_type[0][i] *= 0
 
-                if row.First_pokemon[j] in very_effective_dict.get(row.Second_pokemon[i]):
+                if row.first_pokemon[j] in very_effective_dict.get(row.second_pokemon[i]):
                     nested_type[1][i] *= 2
-                if row.First_pokemon[j] in not_very_effective_dict.get(row.Second_pokemon[i]):
+                if row.first_pokemon[j] in not_very_effective_dict.get(row.second_pokemon[i]):
                     nested_type[1][i] /= 2
-                if row.First_pokemon[j] in not_effective_dict.get(row.Second_pokemon[i]):
+                if row.first_pokemon[j] in not_effective_dict.get(row.second_pokemon[i]):
                     nested_type[1][i] *= 0
 
         p1_type1_list.append(nested_type[0][0])
@@ -146,6 +146,6 @@ def calculate_effectiveness(data):
         
 
     data = data.assign(P1_type1=p1_type1_list, P1_type2=p1_type2_list, P2_type1=p2_type1_list, P2_type2=p2_type2_list)
-    data = data.drop(['First_pokemon', 'Second_pokemon'], axis=1)
+    data = data.drop(['first_pokemon', 'second_pokemon'], axis=1)
 
     return data

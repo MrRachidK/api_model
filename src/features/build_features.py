@@ -1,42 +1,45 @@
 # Import of the libraries
 import sys 
 import os
+
+import data
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 import pandas as pd
 from src.features.functions import create_dictionaries, replace_things, calculate_stats, calculate_effectiveness
-import mysql.connector
-from credentials import sql_user, sql_password, sql_host, sql_database
+from flask_sqlalchemy import SQLAlchemy
+from model_app.db import database, Pokemon, Combat
+from app import app
 
 def create_features():
-    # Initialize MYSQL connection
-    cursor = mysql.connector.connect(user=sql_user, password=sql_password, host=sql_host, database=sql_database)
 
-    # Get pokemon data
-    pokemon_data = pd.read_sql("SELECT * FROM pokemon", con=cursor)
+    with app.app_context():
+        # Get pokemon data
+        pokemon_data = database.session.query(Pokemon).all()
+        pokemon_df = pd.DataFrame([p.json() for p in pokemon_data])
 
-    # Get combats data
-    combats_data = pd.read_sql("SELECT * FROM combats", con=cursor)
+        # Get combats data
+        combats_data = database.session.query(Combat).all()
+        combats_df = pd.DataFrame([c.json() for c in combats_data])
 
-    # Data processing
+        # Data processing
 
-    ## Creation of columns
+        ## Creation of columns
 
-    ## Update of columns
+        ## Update of columns
 
-    #changing winner to 0 and 1, each corresponds to first and second pokemon respectively
-    combats_data.Winner[combats_data.Winner == combats_data.First_pokemon] = 0
-    combats_data.Winner[combats_data.Winner == combats_data.Second_pokemon] = 1
+        #changing winner to 0 and 1, each corresponds to first and second pokemon respectively
+        combats_df.winner[combats_df.winner == combats_df.first_pokemon] = 0
+        combats_df.winner[combats_df.winner == combats_df.second_pokemon] = 1
+        ## Creation of dictionnaries
 
-    ## Creation of dictionnaries
+        name_dict, type_dict, stats_dict = create_dictionaries(pokemon_df)
 
-    name_dict, type_dict, stats_dict = create_dictionaries(pokemon_data)
+        ## Map the battle to pokemon's data
 
-    ## Map the battle to pokemon's data
+        train_df = replace_things(combats_df, stats_dict, type_dict)
+        train_df = calculate_stats(train_df)
+        train_df = calculate_effectiveness(train_df)
 
-    train_df = replace_things(combats_data, stats_dict, type_dict)
-    train_df = calculate_stats(train_df)
-    train_df = calculate_effectiveness(train_df)
-
-    return train_df
+        return train_df

@@ -8,26 +8,26 @@ from config import basedir
 
 import pandas as pd
 import joblib
-import mysql.connector
-from credentials import sql_user, sql_password, sql_host, sql_database
+from flask_sqlalchemy import SQLAlchemy
+from model_app.db import database, Pokemon, Combat
 
 from src.features.functions import create_dictionaries, replace_things, calculate_stats, calculate_effectiveness
 
 def predict_result(pokemon_1, pokemon_2):
 
-    # Initialize MYSQL connection
-    cursor = mysql.connector.connect(user=sql_user, password=sql_password, host=sql_host, database=sql_database)
-    pokemon_data = pd.read_sql("SELECT * FROM pokemon", con=cursor)
+    # Initialize SQLAlchemy variables
+    pokemon_data = database.session.query(Pokemon).all()
+    pokemon_df = pd.DataFrame([p.json() for p in pokemon_data])
 
     # Create dictionnaries
-    name_dict, type_dict, stats_dict = create_dictionaries(pokemon_data)
+    name_dict, type_dict, stats_dict = create_dictionaries(pokemon_df)
 
     # Unpickle model
     model = joblib.load(os.path.join(basedir, 'src/models/best_model.pkl'))
 
     # Get values through input bars
-    X = pd.DataFrame([[pokemon_1, pokemon_2]], columns = ["First_pokemon", "Second_pokemon"]).astype('int64')
-    print(type(X))
+    X = pd.DataFrame([[pokemon_1, pokemon_2]], columns = ["first_pokemon", "second_pokemon"]).astype('int64')
+    print(X)
 
     # Put inputs to dataframe        
     mapped_X = X.copy()
@@ -36,14 +36,13 @@ def predict_result(pokemon_1, pokemon_2):
     mapped_X_types = calculate_effectiveness(mapped_X_statistics)
     
     # Get prediction
-    X['Winner'] = model.predict(mapped_X_types)[0]
-    X['First_pokemon'] = X['First_pokemon'].map(name_dict)
-    X['Second_pokemon'] = X['Second_pokemon'].map(name_dict)
+    X['winner'] = model.predict(mapped_X_types)[0]
+    X['first_pokemon'] = X['first_pokemon'].map(name_dict)
+    X['second_pokemon'] = X['second_pokemon'].map(name_dict)
 
-    X['Winner'][X['Winner'] == 0] = X['First_pokemon']
-    X['Winner'][X['Winner'] == 1] = X['Second_pokemon']
+    X['winner'][X['winner'] == 0] = X['first_pokemon']
+    X['winner'][X['winner'] == 1] = X['second_pokemon']
 
-    prediction = X['Winner'].iloc[0]
-    cursor.close()
+    prediction = X['winner'].iloc[0]
 
     return prediction

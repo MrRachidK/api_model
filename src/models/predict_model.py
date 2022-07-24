@@ -19,7 +19,7 @@ import joblib
 
 def get_best_model(features):
     # Split the data into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(features.drop('Winner', axis=1), features['Winner'], test_size=0.2, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(features.drop(['id', 'winner'], axis=1), features['winner'], test_size=0.2, random_state=0)
 
     # Create the models
     models = {
@@ -43,7 +43,7 @@ def get_best_model(features):
 
     # Sort the results so the best model is first
     results = sorted(results.items(), key=lambda x: x[1][1], reverse=True)
-    
+    print(results)
     # Save the best model for future use
     joblib.dump(results[0][1][0], os.path.join(basedir, 'src/models/best_model.pkl'))
 

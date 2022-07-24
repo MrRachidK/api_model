@@ -1,72 +1,103 @@
 import sys 
 import os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 from config import basedir
 import pandas as pd
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import ForeignKey
+import logging as lg
 
-### Initialize MySQL database
-def init_db(mysql):
+database = SQLAlchemy()
+
+class Pokemon(database.Model):
+    __tablename__ = 'pokemon'
+    number = database.Column(database.Integer, primary_key=True)
+    name = database.Column(database.String(255))
+    type_1 = database.Column(database.String(255))
+    type_2 = database.Column(database.String(255))
+    hp = database.Column(database.Integer)
+    attack = database.Column(database.Integer)
+    defense = database.Column(database.Integer)
+    sp_atk = database.Column(database.Integer)
+    sp_def = database.Column(database.Integer)
+    speed = database.Column(database.Integer)
+    generation = database.Column(database.Integer)
+    legendary = database.Column(database.Boolean)
+    
+    def __repr__(self):
+        return '<Pokemon %r>' % self.name
+
+    def json(self):
+        return {
+            'number': self.number,
+            'name': self.name,
+            'type_1': self.type_1,
+            'type_2': self.type_2,
+            'hp': self.hp,
+            'attack': self.attack,
+            'defense': self.defense,
+            'sp_atk': self.sp_atk,
+            'sp_def': self.sp_def,
+            'speed': self.speed,
+            'generation': self.generation,
+            'legendary': self.legendary,
+        }
+
+    @classmethod
+    def find_by_name(cls, name):
+        return cls.query.filter_by(name=name).first()
+
+    def save_to_database(self):
+        database.session.add(self)
+        database.session.commit()
+
+    def delete_from_database(self):
+        database.session.delete(self)
+        database.session.commit()
+
+class Combat(database.Model):
+    __tablename__ = 'combats'
+    id = database.Column(database.Integer, primary_key=True)
+    first_pokemon = database.Column(database.Integer, ForeignKey('pokemon.number'))
+    second_pokemon = database.Column(database.Integer, ForeignKey('pokemon.number'))
+    winner = database.Column(database.Integer, ForeignKey('pokemon.number'))
+
+    def __repr__(self):
+        return '<Combat %r>' % self.id
+
+    def json(self):
+        return {
+            'id': self.id,
+            'first_pokemon': self.first_pokemon,
+            'second_pokemon': self.second_pokemon,
+            'winner': self.winner,
+        }
+
+    @classmethod
+    def find_by_id(cls, id):
+        return cls.query.filter_by(id=id).first()
+
+    def save_to_database(self):
+        database.session.add(self)
+        database.session.commit()
+
+    def delete_from_database(self):
+        database.session.delete(self)
+        database.session.commit()
+
+def init_db():
+    database.drop_all()
+    database.create_all()
+
     pokemon_data = pd.read_csv(os.path.join(basedir, 'data/intermediate/pokemon.csv'), index_col=False, delimiter = ',')
+    pokemon_data = pokemon_data.rename(columns={'Sp. Atk': 'sp_atk', 'Sp. Def': 'sp_def'})
+    pokemon_data.to_sql('pokemon', database.engine, if_exists='append', index=False)
 
     combats_data = pd.read_csv(os.path.join(basedir, 'data/raw/combats.csv'), index_col=False, delimiter = ',')
+    combats_data.to_sql('combats', database.engine, if_exists='append', index=False)
 
-    cursor = mysql.connection.cursor()
-    # Executing SQL Statements
-
-    ## Database
-    cursor.execute("DROP DATABASE IF EXISTS pokemon_analytics")
-    cursor.execute("CREATE DATABASE IF NOT EXISTS pokemon_analytics")
-    cursor.execute("USE pokemon_analytics")
-
-    ## Tables
-    ### Pokemon
-    cursor.execute('''DROP TABLE IF EXISTS pokemon''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS pokemon (
-        Number INT NOT NULL,
-        Name VARCHAR(255) NOT NULL,
-        Type_1 VARCHAR(255) NOT NULL,
-        Type_2 VARCHAR(255) NOT NULL,
-        HP INT NOT NULL,
-        Attack INT NOT NULL,
-        Defense INT NOT NULL,
-        Sp_Atk INT NOT NULL,
-        Sp_Def INT NOT NULL,
-        Speed INT NOT NULL,
-        Generation INT NOT NULL,
-        Legendary TINYINT NOT NULL,
-        PRIMARY KEY (Number)
-    ) 
-    ''')
-
-    ### Duels
-    cursor.execute('''DROP TABLE IF EXISTS combats''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS combats (
-        First_pokemon INT NOT NULL,
-        Second_pokemon INT NOT NULL,
-        Winner INT NOT NULL,
-        FOREIGN KEY (First_pokemon) REFERENCES pokemon(Number),
-        FOREIGN KEY (Second_pokemon) REFERENCES pokemon(Number),
-        FOREIGN KEY (Winner) REFERENCES pokemon(Number)
-    )
-    ''')
-
-    # Insertion of data
-    for i, row in pokemon_data.iterrows():
-        sql = "INSERT INTO pokemon VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        cursor.execute(sql, tuple(row))
-
-    for i, row in combats_data.iterrows():
-        sql = "INSERT INTO combats (First_pokemon, Second_pokemon, Winner) VALUES (%s, %s, %s)"
-        cursor.execute(sql, tuple(row))
-    
-    # Saving the Actions performed on the DB
-    mysql.connection.commit()
-    
-    # Closing the cursor
-    cursor.close()
-
+    lg.info('Database initialized')
 
