@@ -37,8 +37,8 @@ def predict_result(pokemon_1, pokemon_2):
     
     # Get prediction
     X['winner'] = model.predict(mapped_X_types)[0]
-    X['first_pokemon'] = X['first_pokemon'].map(name_dict)
-    X['second_pokemon'] = X['second_pokemon'].map(name_dict)
+    # X['first_pokemon'] = X['first_pokemon'].map(name_dict)
+    # X['second_pokemon'] = X['second_pokemon'].map(name_dict)
 
     X['winner'][X['winner'] == 0] = X['first_pokemon']
     X['winner'][X['winner'] == 1] = X['second_pokemon']
