@@ -2,7 +2,6 @@
 import sys 
 import os
 
-import data
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
@@ -18,6 +17,7 @@ def create_features():
         # Get pokemon data
         pokemon_data = database.session.query(Pokemon).all()
         pokemon_df = pd.DataFrame([p.json() for p in pokemon_data])
+        print(pokemon_df.tail())
 
         # Get combats data
         combats_data = database.session.query(Combat).all()
@@ -43,3 +43,4 @@ def create_features():
         train_df = calculate_effectiveness(train_df)
 
         return train_df
+
